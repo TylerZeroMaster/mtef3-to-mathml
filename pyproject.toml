@@ -1,0 +1,44 @@
+[project]
+name = "mtef3-to-mathml"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "latex2mathml>=3.79.0",
+    "lxml>=6.0.2",
+    "olefile>=0.47",
+    "tqdm>=4.67.3",
+]
+license-files = ["NOTICE.md", "LICENSE"]
+
+[project.scripts]
+mtef3-to-mathml = "mtef3_to_mathml.main:main"
+
+[tool.setuptools.package-data]
+mtef3_to_mathml = ["*.xsl", "xsl/*.xsl"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+    "pytest-verify>=1.2.0",
+    "ruff>=0.15.10",
+]
+
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific rules
+    "N",   # pep8-naming
+]

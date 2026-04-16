@@ -1,0 +1,71 @@
+<?xml version="1.0" ?>
+<slot>
+	
+      
+	<tmpl>
+		
+        
+		<selector>tmLSCRIPT</selector>
+		
+        
+		<variation>tvLSUB</variation>
+		
+        
+		<tmpl_options>0</tmpl_options>
+		
+        
+		<slot/>
+		<slot>
+			<char>
+				
+      
+				<mt_code_value>0x0032</mt_code_value>
+				
+      
+				<variation>mathmode</variation>
+				
+    
+			</char>
+		</slot>
+		
+      
+	</tmpl>
+	
+      
+	<char>
+		
+      
+		<mt_code_value>0x0028</mt_code_value>
+		
+      
+		<variation>mathmode</variation>
+		
+    
+	</char>
+	
+      
+	<char>
+		
+      
+		<mt_code_value>0x0078</mt_code_value>
+		
+      
+		<variation>mathmode</variation>
+		
+    
+	</char>
+	
+      
+	<char>
+		
+      
+		<mt_code_value>0x0029</mt_code_value>
+		
+      
+		<variation>mathmode</variation>
+		
+    
+	</char>
+	
+    
+</slot>

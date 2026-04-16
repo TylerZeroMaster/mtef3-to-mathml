@@ -1,0 +1,61 @@
+<?xml version="1.0" ?>
+<slot>
+	
+      
+	<tmpl>
+		
+        
+		<selector>tmSCRIPT</selector>
+		
+        
+		<variation>tvSUB</variation>
+		
+        
+		<tmpl_options>0</tmpl_options>
+		
+        
+		<slot>
+			<tmpl>
+				
+        
+				<selector>tmFRACT</selector>
+				
+        
+				<variation>tvFFRACT</variation>
+				
+        
+				<tmpl_options>0</tmpl_options>
+				
+        
+				<slot>
+					<mi>a</mi>
+				</slot>
+				
+        
+				<slot>
+					<mi>b</mi>
+				</slot>
+				
+      
+			</tmpl>
+			
+      
+		</slot>
+		<slot>
+			<char>
+				
+      
+				<mt_code_value>0x0032</mt_code_value>
+				
+      
+				<variation>mathmode</variation>
+				
+    
+			</char>
+		</slot>
+		
+      
+	</tmpl>
+	
+    
+</slot>

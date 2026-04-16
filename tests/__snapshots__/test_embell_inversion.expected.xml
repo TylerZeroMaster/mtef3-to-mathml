@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<slot>
+	
+      
+	<embell>
+		
+          
+		<embell>emb1DOT</embell>
+		
+        
+		<char>
+			
+        
+			<mt_code_value>0x0078</mt_code_value>
+			
+        
+			<variation>mathmode</variation>
+			
+        
+		</char>
+		
+    
+	</embell>
+	
+      
+</slot>

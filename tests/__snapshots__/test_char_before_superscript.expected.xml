@@ -1,0 +1,51 @@
+<?xml version="1.0" ?>
+<slot>
+	
+      
+	<tmpl>
+		
+        
+		<selector>tmSCRIPT</selector>
+		
+        
+		<variation>tvSUPER</variation>
+		
+        
+		<tmpl_options>0</tmpl_options>
+		
+        
+		<slot>
+			<char>
+				
+      
+				<mt_code_value>0x0078</mt_code_value>
+				
+      
+				<variation>mathmode</variation>
+				
+    
+			</char>
+			
+      
+		</slot>
+		<slot/>
+		
+        
+		<slot>
+			<char>
+				
+      
+				<mt_code_value>0x0032</mt_code_value>
+				
+      
+				<variation>mathmode</variation>
+				
+    
+			</char>
+		</slot>
+		
+      
+	</tmpl>
+	
+    
+</slot>
