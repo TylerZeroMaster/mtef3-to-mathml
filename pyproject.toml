@@ -1,14 +1,12 @@
 [project]
 name = "mtef3-to-mathml"
-version = "0.1.0"
+version = "0.1.1"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "latex2mathml>=3.79.0",
     "lxml>=6.0.2",
     "olefile>=0.47",
-    "tqdm>=4.67.3",
 ]
 license-files = ["NOTICE.md", "LICENSE"]
 
