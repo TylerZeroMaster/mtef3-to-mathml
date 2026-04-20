@@ -717,11 +717,10 @@ def _slurp_numbers(nodes):
                 i += 1
 
 
-def transform_mathml(tree: etree._Element, raise_on_error=True):
+def transform_mathml(tree: etree._Element, block=False, raise_on_error=True):
     try:
-        # TODO: Maybe don't hardcode inline?
         el = etree.Element("equation_options")
-        el.text = "inline"
+        el.text = "block" if block else "inline"
         tree.insert(0, el)
         move(tree)
         replace(tree)
