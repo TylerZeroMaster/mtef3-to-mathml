@@ -149,7 +149,7 @@ class MTEF3Equation:
     subversion: int
 
 
-def get_mtef_ole(ole_path):
+def _get_mtef_ole(ole_path):
     if not olefile.isOleFile(ole_path):
         return []
 
@@ -167,7 +167,7 @@ def get_mtef_ole(ole_path):
     return equations
 
 
-def read_nudge(stream):
+def _read_nudge(stream):
     dx_byte, dy_byte = stream.read(2)
     if dx_byte == 128 and dy_byte == 128:
         # Read two 16-bit signed integers (4 bytes total)
@@ -178,11 +178,11 @@ def read_nudge(stream):
         return dx_byte - 128, dy_byte - 128
 
 
-def parse_object_list(stream):
+def _parse_object_list(stream):
     objects = []
     logger.debug("Parsing object list")
     while True:
-        record = parse_record(stream)
+        record = _parse_record(stream)
         if record:
             logger.debug("Record type: %s", record["type"])
         if record is None or record["type"] == "END":
@@ -191,7 +191,7 @@ def parse_object_list(stream):
     return objects
 
 
-def parse_line(stream, options):
+def _parse_line(stream, options):
     xf_lspace = 0x4
     xf_ruler = 0x02
     line_data = {
@@ -216,17 +216,17 @@ def parse_line(stream, options):
     if options & xf_ruler == xf_ruler:
         # If this flag is set, the immediately following record is a RULER.
         # We parse it and store it in the line_data.
-        line_data["ruler"] = parse_record(stream)
+        line_data["ruler"] = _parse_record(stream)
 
     # 4. Parse the Object List
     # Now parse the actual mathematical contents of the line until the END
     # record
-    line_data["subobjects"] = parse_object_list(stream)
+    line_data["subobjects"] = _parse_object_list(stream)
 
     return line_data
 
 
-def parse_ruler(stream, options):
+def _parse_ruler(stream, options):
     ruler_data = {"type": "RULER", "tab_stops": []}
 
     # 1. Read the number of tab stops (1 byte)
@@ -255,7 +255,7 @@ def parse_ruler(stream, options):
     return ruler_data
 
 
-def parse_char(stream, options):
+def _parse_char(stream, options):
     xf_auto = 0x1  # function recognition candidate
     xf_embell = 0x2  # embellishment list follows
     char_data = {
@@ -294,7 +294,7 @@ def parse_char(stream, options):
     # by END
     if options & xf_embell:
         while True:
-            record = parse_record(stream)
+            record = _parse_record(stream)
             if record is None or record["type"] == "END":
                 break
             if record["type_id"] == 6:  # RecordType.EMBELL
@@ -303,7 +303,7 @@ def parse_char(stream, options):
     return char_data
 
 
-def parse_tmpl(stream, options):
+def _parse_tmpl(stream, options):
     tmpl_data = {
         "type": "TMPL",
         "selector": None,
@@ -329,12 +329,12 @@ def parse_tmpl(stream, options):
     tmpl_data["tmpl_options"] = stream.read(1)[0]
 
     # 4. Parse the Subobject List (until END)
-    tmpl_data["subobjects"] = parse_object_list(stream)
+    tmpl_data["subobjects"] = _parse_object_list(stream)
 
     return tmpl_data
 
 
-def parse_pile(stream, options):
+def _parse_pile(stream, options):
     xf_ruler = 0x02
     pile_data = {
         "type": "PILE",
@@ -348,14 +348,14 @@ def parse_pile(stream, options):
     pile_data["valign"] = VALIGN_TYPES.get(stream.read(1)[0])
 
     if options & xf_ruler == xf_ruler:
-        pile_data["ruler"] = parse_record(stream)
+        pile_data["ruler"] = _parse_record(stream)
 
-    pile_data["subobjects"] = parse_object_list(stream)
+    pile_data["subobjects"] = _parse_object_list(stream)
 
     return pile_data
 
 
-def unpack_partitions(raw_bytes, num_partitions):
+def _unpack_partitions(raw_bytes, num_partitions):
     """Unpacks an array of bytes into a list of 2-bit string names."""
     partitions = []
 
@@ -376,7 +376,7 @@ def unpack_partitions(raw_bytes, num_partitions):
     return partitions
 
 
-def parse_matrix(stream, options):
+def _parse_matrix(stream, options):
     matrix_data = {
         "type": "MATRIX",
         "valign": None,
@@ -409,20 +409,20 @@ def parse_matrix(stream, options):
     num_col_parts = cols + 1
 
     # Read the raw partition bytes
-    matrix_data["row_parts"] = unpack_partitions(
+    matrix_data["row_parts"] = _unpack_partitions(
         stream.read(row_bytes_to_read), num_row_parts
     )
-    matrix_data["col_parts"] = unpack_partitions(
+    matrix_data["col_parts"] = _unpack_partitions(
         stream.read(col_bytes_to_read), num_col_parts
     )
 
     # Parse the objects (one for each element of the matrix)
-    matrix_data["subobjects"] = parse_object_list(stream)
+    matrix_data["subobjects"] = _parse_object_list(stream)
 
     return matrix_data
 
 
-def parse_embell(stream, options):
+def _parse_embell(stream, options):
     embell_val = stream.read(1)[0]
 
     return {
@@ -431,7 +431,7 @@ def parse_embell(stream, options):
     }
 
 
-def parse_font(stream, options):
+def _parse_font(stream, options):
     font_data = {"type": "FONT", "tface": None, "style": None, "name": None}
 
     # 1. Read typeface number (1 byte)
@@ -461,7 +461,7 @@ def parse_font(stream, options):
     return font_data
 
 
-def parse_size(stream, options):
+def _parse_size(stream, options):
     first = stream.read(1)[0]
 
     if first == 101:  # explicit point size
@@ -483,7 +483,7 @@ def parse_size(stream, options):
     return {"type": "SIZE", "lsize": lsize_name, "dsize": dsize}
 
 
-def parse_record(stream):
+def _parse_record(stream):
     # 1. Read the tag byte
     tag_bytes = stream.read(1)
     if not tag_bytes:
@@ -499,7 +499,7 @@ def parse_record(stream):
 
     # 3. Handle nudges globally if the xfLMOVE flag (0x8) is set
     if options & 0x8:
-        record_data["nudge"] = read_nudge(stream)
+        record_data["nudge"] = _read_nudge(stream)
 
     logger.debug("Record type: %d", record_type)
 
@@ -508,25 +508,25 @@ def parse_record(stream):
         record_data["type"] = "END"
         return record_data
     elif record_type == 1:
-        record_data.update(parse_line(stream, options))
+        record_data.update(_parse_line(stream, options))
     elif record_type == 2:
-        record_data.update(parse_char(stream, options))
+        record_data.update(_parse_char(stream, options))
     elif record_type == 3:
-        record_data.update(parse_tmpl(stream, options))
+        record_data.update(_parse_tmpl(stream, options))
     elif record_type == 4:
-        record_data.update(parse_pile(stream, options))
+        record_data.update(_parse_pile(stream, options))
     elif record_type == 5:
-        record_data.update(parse_matrix(stream, options))
+        record_data.update(_parse_matrix(stream, options))
     elif record_type == 6:
-        record_data.update(parse_embell(stream, options))
+        record_data.update(_parse_embell(stream, options))
     elif record_type == 7:
-        record_data.update(parse_ruler(stream, options))
+        record_data.update(_parse_ruler(stream, options))
     elif record_type == 8:
         # might want to maintain a global font_table dictionary at the top
         # level store these as they come in
-        record_data.update(parse_font(stream, options))
+        record_data.update(_parse_font(stream, options))
     elif record_type == 9:
-        record_data.update(parse_size(stream, options))
+        record_data.update(_parse_size(stream, options))
     elif 10 <= record_type <= 14:
         # Shortcut for size records
         record_data["type"] = "SIZE"
@@ -566,7 +566,7 @@ _XML_CHAR_MAP = {
 _XML_TYPEFACE_MAP = {v: str(k) for k, v in TYPEFACE.items()}
 
 
-def build_xml(record):
+def _build_xml(record):
     type_id = record.get("type_id")
     rec_type = record.get("type")
 
@@ -606,11 +606,11 @@ def build_xml(record):
     # Ruler is a single nested record
     ruler = record.get("ruler")
     if ruler and ruler.get("type") != "END":
-        elem.append(build_xml(ruler))
+        elem.append(_build_xml(ruler))
 
     # Embellishments are a list of EMBELL records on a CHAR
     for emb in record.get("embellishments", []):
-        elem.append(build_xml(emb))
+        elem.append(_build_xml(emb))
 
     # Tab stops are plain dicts inside RULER records
     for stop in record.get("tab_stops", []):
@@ -622,7 +622,7 @@ def build_xml(record):
     # Recurse into subobjects
     for sub in record.get("subobjects", []):
         if sub.get("type") != "END":
-            elem.append(build_xml(sub))
+            elem.append(_build_xml(sub))
 
     return elem
 
@@ -631,7 +631,7 @@ def build_mtef_xml(equation: MTEF3Equation):
     root = etree.Element("mtef")
     for record in equation.records:
         if record.get("type") != "END":
-            root.append(build_xml(record))
+            root.append(_build_xml(record))
     comment = etree.Comment(
         f"MTEF Version: {equation.mtef_version}, "
         f"Platform: {equation.platform}, "
@@ -643,7 +643,7 @@ def build_mtef_xml(equation: MTEF3Equation):
     return root
 
 
-def parse_equation_stream(stream):
+def _parse_equation_stream(stream):
     mtef_version, platform, product, version, subversion = struct.unpack(
         "5B", stream.read(5)
     )
@@ -666,7 +666,7 @@ def parse_equation_stream(stream):
 
     records = []
     while True:
-        record = parse_record(stream)
+        record = _parse_record(stream)
         if record is None:
             break
         records.append(record)
@@ -677,11 +677,11 @@ def parse_equation_stream(stream):
 
 
 def iter_parse_equations(p: Path, raise_on_error=True):
-    for equation in get_mtef_ole(p):
+    for equation in _get_mtef_ole(p):
         offset = equation[0]
         with BytesIO(equation[offset:]) as stream:
             try:
-                yield parse_equation_stream(stream)
+                yield _parse_equation_stream(stream)
             except Exception as e:
                 if raise_on_error:
                     raise
@@ -693,7 +693,7 @@ def parse_equations(p: Path, raise_on_error=True):
     return list(iter_parse_equations(p, raise_on_error))
 
 
-def slurp_numbers(nodes):
+def _slurp_numbers(nodes):
     mn_tag = "mn"
     mo_tag = "mo"
 
@@ -727,7 +727,7 @@ def transform_mathml(tree: etree._Element, raise_on_error=True):
         replace(tree)
         xslt_result = MATHML_XSLT(tree)
         root = xslt_result.getroot()
-        slurp_numbers(list(root.iter()))
+        _slurp_numbers(list(root.iter()))
         return root
     except Exception as e:
         if raise_on_error:
