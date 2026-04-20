@@ -727,7 +727,12 @@ def transform_mathml(tree: etree._Element, block=False, raise_on_error=True):
         xslt_result = MATHML_XSLT(tree)
         root = xslt_result.getroot()
         _slurp_numbers(list(root.iter()))
-        return root
+        return etree.fromstring(
+            etree.tostring(root, encoding="unicode").replace(
+                '<math',
+                '<math xmlns="http://www.w3.org/1998/Math/MathML"'
+            )
+        )
     except Exception as e:
         if raise_on_error:
             raise
