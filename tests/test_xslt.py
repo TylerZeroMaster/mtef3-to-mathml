@@ -100,3 +100,46 @@ def test_sqrt():
         <tmpl_options>0</tmpl_options>
         <slot><mi>x</mi></slot>
       </tmpl>""")))
+
+
+def char(mt_code, variation):
+    return f"""<char>
+      <typeface>1</typeface>
+      <mt_code_value>{mt_code}</mt_code_value>
+      <variation>{variation}</variation>
+    </char>"""
+
+
+@verify_snapshot()
+def test_textmode_default_greek_letter_wrapped():
+    """A textmode char with no char_replacer/char.xsl override (e.g. Greek
+    mu, U+03BC — not covered by char_replacer.py's replacements dict, no
+    specific char.xsl template) must still land wrapped in <mtext>, not as
+    bare text directly inside <mrow>. Reproduces the mtef3-to-mathml
+    'bare unwrapped character' bug (college-physics SSM/ISM instances)."""
+    return serialize(MATHML_XSLT(inline(char("0x03BC", "textmode"))))
+
+
+@verify_snapshot()
+def test_textmode_default_ascii_gap_wrapped():
+    """A textmode char in one of char_replacer.py's ASCII gaps (e.g. '%',
+    U+0025, which falls between the 0x0021 and 0x0028 entries) must still
+    land wrapped in <mtext>, not as bare text. Reproduces the bug seen in
+    college-physics ISM-Ch01 image25."""
+    return serialize(MATHML_XSLT(inline(char("0x0025", "textmode"))))
+
+
+@verify_snapshot()
+def test_textmode_default_mathtype_pua_gap_wrapped():
+    """A textmode char in the MathType private-use gap (U+EB01, uncovered
+    by both char_replacer.py and char.xsl's specific templates) must still
+    land wrapped in <mtext>, not as bare text."""
+    return serialize(MATHML_XSLT(inline(char("0xEB01", "textmode"))))
+
+
+@verify_snapshot()
+def test_mathmode_default_unaffected():
+    """Sanity check: the mathmode default template already wraps correctly
+    (in <mi>), so an unmapped mathmode Greek letter is unaffected by the
+    textmode-default bug."""
+    return serialize(MATHML_XSLT(inline(char("0x03BC", "mathmode"))))

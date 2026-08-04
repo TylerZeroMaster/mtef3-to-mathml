@@ -24,10 +24,13 @@
         </mi>
     </xsl:template>
 
+    <!-- Default char translation for textmode -->
     <xsl:template match="char[variation = 'textmode']">
-        <xsl:call-template name="charhex">
-            <xsl:with-param name="mt_code_value" select="mt_code_value/text()" />
-        </xsl:call-template>
+        <mtext>
+            <xsl:call-template name="charhex">
+                <xsl:with-param name="mt_code_value" select="mt_code_value/text()" />
+            </xsl:call-template>
+        </mtext>
     </xsl:template>
 
     <xsl:template match="char[typeface = '2']">

@@ -271,7 +271,7 @@ wheels = [
 [[package]]
 name = "mtef3-to-mathml"
 version = "0.2.1"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "lxml" },
     { name = "olefile" },
