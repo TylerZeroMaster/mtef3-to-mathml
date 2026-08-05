@@ -9,7 +9,7 @@ MO_HEX = "<mo>(CharHex)</mo>"
 MN_HEX = "<mn>(CharHex)</mn>"
 MI_HEX = "<mi>(CharHex)</mi>"
 MTEXT_HEX = "<mtext>(CharHex)</mtext>"
-UNSUPPORTED = "Unsupported (Char)"
+UNSUPPORTED = "{{UNSUPPORTED:(MtCode)}}"
 DEFAULT_TEXTMODE = "<mtext>(Char)</mtext>"
 DEFAULT_MATHMODE = "<mi>(Char)<mi>"
 
@@ -215,7 +215,11 @@ replacements = {
 
 def replacement_xml(template, mt_code):
     char_str = chr(int(mt_code, 16))
-    return template.replace("(Char)", char_str).replace("(CharHex)", char_str)
+    return (
+        template.replace("(Char)", char_str)
+        .replace("(CharHex)", char_str)
+        .replace("(MtCode)", mt_code)
+    )
 
 
 def replace_character(repl, char):

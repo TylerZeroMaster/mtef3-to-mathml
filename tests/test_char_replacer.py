@@ -67,6 +67,20 @@ def test_unknown_code_unchanged():
 
 
 @verify_snapshot()
+def test_unsupported_control_char_mathmode():
+    """A codepoint mapped to UNSUPPORTED (0x0000, a control char) in mathmode
+    → the {{UNSUPPORTED:0xHEX}} marker, not a raw invisible/placeholder char."""
+    return serialize(replace(make_tree("0x0000")))
+
+
+@verify_snapshot()
+def test_unsupported_pua_char_textmode():
+    """A PUA codepoint mapped to UNSUPPORTED (0xE000) in textmode
+    → the {{UNSUPPORTED:0xHEX}} marker."""
+    return serialize(replace(make_tree("0xE000", "textmode")))
+
+
+@verify_snapshot()
 def test_multiple_chars():
     """Multiple chars in a slot are each replaced independently."""
     tree = etree.fromstring("""<slot>
