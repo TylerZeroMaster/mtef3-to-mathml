@@ -35,6 +35,7 @@
     <xsl:include href="xsl/int.xsl" />
     <xsl:include href="xsl/lim.xsl" />
     <xsl:include href="xsl/frac.xsl" />
+    <xsl:include href="xsl/root.xsl" />
     <xsl:include href="xsl/pile.xsl" />
     <xsl:include href="xsl/char.xsl" />
     <xsl:include href="xsl/embellishment.xsl" />

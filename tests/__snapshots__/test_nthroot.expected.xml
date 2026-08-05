@@ -5,11 +5,14 @@
 	<mrow>
 		
       
-		<msqrt>
+		<mroot>
 			<mrow>
 				<mi>x</mi>
 			</mrow>
-		</msqrt>
+			<mrow>
+				<mn>3</mn>
+			</mrow>
+		</mroot>
 	</mrow>
 	
 

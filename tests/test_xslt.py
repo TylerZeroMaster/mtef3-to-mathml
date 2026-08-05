@@ -92,13 +92,30 @@ def test_subsup():
 
 @verify_snapshot()
 def test_sqrt():
-    """tmROOT/tvSQROOT → <msqrt>."""
+    """tmROOT/tvSQROOT with an empty index slot (slot[2], as MathType always
+    emits for a plain square root) → <msqrt>, not a dropped/empty <mrow>.
+    Reproduces the college-physics dropped-radical bug: tmROOT had no XSL
+    template and fell through to the match="*" catch-all in transform.xsl."""
     return serialize(MATHML_XSLT(inline("""
       <tmpl>
         <selector>tmROOT</selector>
         <variation>tvSQROOT</variation>
         <tmpl_options>0</tmpl_options>
         <slot><mi>x</mi></slot>
+        <slot/>
+      </tmpl>""")))
+
+
+@verify_snapshot()
+def test_nthroot():
+    """tmROOT/tvNTHROOT with radicand (slot[1]) and index (slot[2]) → <mroot>."""
+    return serialize(MATHML_XSLT(inline("""
+      <tmpl>
+        <selector>tmROOT</selector>
+        <variation>tvNTHROOT</variation>
+        <tmpl_options>0</tmpl_options>
+        <slot><mi>x</mi></slot>
+        <slot><mn>3</mn></slot>
       </tmpl>""")))
 
 
@@ -143,3 +160,20 @@ def test_mathmode_default_unaffected():
     (in <mi>), so an unmapped mathmode Greek letter is unaffected by the
     textmode-default bug."""
     return serialize(MATHML_XSLT(inline(char("0x03BC", "mathmode"))))
+
+
+@verify_snapshot()
+def test_textmode_default_char_with_embellishment_not_nested():
+    """An unmapped textmode char (Greek mu) under an embellishment (dot
+    accent) must land as a <mtext> SIBLING of the accent mark inside
+    <mover>, not nested inside another token element. embellishment.xsl's
+    `(char | mn | mo | mtext | mi)[1]` selection places whatever the char
+    resolves to directly as mover's first child — guards against the
+    'mtext inside mi' nesting concern raised when the textmode-default fix
+    was added (char.xsl's default templates never wrap one token element
+    inside another; only slot/pile/embell containers do)."""
+    return serialize(MATHML_XSLT(inline(f"""
+      <embell>
+        <embell>embDOT</embell>
+        {char("0x03BC", "textmode")}
+      </embell>""")))
