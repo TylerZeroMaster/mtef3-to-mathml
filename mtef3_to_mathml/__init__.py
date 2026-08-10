@@ -68,6 +68,79 @@ TMPL_DEFS = (
     ("tmOARC", ()),
 )
 
+# Selector -> template class, per MTEF3.html "Template Selectors and Variations".
+TMPL_CLASSES = {
+    "tmANGLE": "ParBoxClass",
+    "tmPAREN": "ParBoxClass",
+    "tmBRACE": "ParBoxClass",
+    "tmBRACK": "ParBoxClass",
+    "tmBAR": "ParBoxClass",
+    "tmDBAR": "ParBoxClass",
+    "tmFLOOR": "ParBoxClass",
+    "tmCEILING": "ParBoxClass",
+    "tmLBLB": "ParBoxClass",
+    "tmRBRB": "ParBoxClass",
+    "tmRBLB": "ParBoxClass",
+    "tmLBRP": "ParBoxClass",
+    "tmLPRB": "ParBoxClass",
+    "tmROOT": "RootBoxClass",
+    "tmFRACT": "FracBoxClass",
+    "tmSCRIPT": "ScrBoxClass",
+    "tmUBAR": "BarBoxClass",
+    "tmOBAR": "BarBoxClass",
+    "tmLARROW": "ArroBoxClass",
+    "tmRARROW": "ArroBoxClass",
+    "tmBARROW": "ArroBoxClass",
+    "tmSINT": "BigOpBoxClass",
+    "tmDINT": "BigOpBoxClass",
+    "tmTINT": "BigOpBoxClass",
+    "tmSSINT": "BigOpBoxClass",
+    "tmDSINT": "BigOpBoxClass",
+    "tmTSINT": "BigOpBoxClass",
+    "tmUHBRACE": "HBrBoxClass",
+    "tmLHBRACE": "HBrBoxClass",
+    "tmSUM": "BigOpBoxClass",
+    "tmISUM": "BigOpBoxClass",
+    "tmPROD": "BigOpBoxClass",
+    "tmIPROD": "BigOpBoxClass",
+    "tmCOPROD": "BigOpBoxClass",
+    "tmICOPROD": "BigOpBoxClass",
+    "tmUNION": "BigOpBoxClass",
+    "tmIUNION": "BigOpBoxClass",
+    "tmINTER": "BigOpBoxClass",
+    "tmIINTER": "BigOpBoxClass",
+    "tmLIM": "LimBoxClass",
+    "tmLDIV": "LDivBoxClass",
+    "tmSLFRACT": "SlashBoxClass",
+    "tmINTOP": "BigOpBoxClass",
+    "tmSUMOP": "BigOpBoxClass",
+    "tmLSCRIPT": "ScrBoxClass",
+    "tmDIRAC": "DiracBoxClass",
+    "tmUARROW": "VectorBoxClass",
+    "tmOARROW": "VectorBoxClass",
+    "tmOARC": "ArcBoxClass",
+}
+
+# Template class -> (number of LINE slots, min CHAR slots, max CHAR slots),
+# per MTEF3.html "Template Subobject Order". SIZE/FONT records are
+# bookkeeping, not slots, and don't count against either.
+CLASS_SLOT_SHAPE = {
+    "ArcBoxClass": (1, 0, 0),
+    "ArroBoxClass": (1, 1, 1),
+    "BarBoxClass": (1, 0, 0),
+    "BigOpBoxClass": (3, 1, 1),
+    "DiracBoxClass": (2, 1, 3),
+    "FracBoxClass": (2, 0, 0),
+    "HBrBoxClass": (2, 1, 1),
+    "LDivBoxClass": (2, 0, 0),
+    "LimBoxClass": (3, 0, 0),
+    "ParBoxClass": (1, 0, 2),
+    "RootBoxClass": (2, 0, 0),
+    "ScrBoxClass": (2, 0, 0),
+    "SlashBoxClass": (2, 0, 0),
+    "VectorBoxClass": (1, 0, 0),
+}
+
 TYPEFACE = {
     1: "fnTEXT",
     2: "fnFUNCTION",
@@ -147,6 +220,7 @@ class MTEF3Equation:
     product: int
     version: int
     subversion: int
+    shape_violations: list[str]
 
 
 def _get_mtef_ole(ole_path):
@@ -643,7 +717,136 @@ def build_mtef_xml(equation: MTEF3Equation):
     return root
 
 
-def _parse_equation_stream(stream):
+def _repair_desynced_records(records):
+    """Re-nest top-level siblings that leaked out of the equation's sole
+    top-level LINE/PILE (MTEF3.html: a stream is exactly one SIZE, one
+    PILE-or-LINE, its contents, then END).
+
+    Some source OLE objects emit a spurious extra END right after an
+    embellished CHAR's embellishment-list terminator, which closes
+    whatever list is currently open one record early. Because that extra
+    END is consumed by whichever list happens to be open at the time, the
+    escaped content can land at the top level even though it belongs many
+    levels deep (see tests/test_integration.py test_desync* for real
+    examples extracted from corrupted equations).
+    """
+    non_end = [r for r in records if r.get("type") != "END"]
+
+    # The initial SIZE record always precedes the container (MTEF3.html:
+    # "initial SIZE record, PILE or LINE record, ..."); it isn't a sibling.
+    start = 1 if non_end and non_end[0].get("type") == "SIZE" else 0
+    if len(non_end) - start <= 1:
+        return records
+
+    container = non_end[start]
+    if container.get("type") not in ("LINE", "PILE"):
+        return records
+
+    stragglers = non_end[start + 1 :]
+
+    if container["type"] == "LINE":
+        container["subobjects"].extend(stragglers)
+    else:  # PILE: rows are LINEs; a bare straggler continues the open row
+        cursor = _last_pile_row(container)
+        for rec in stragglers:
+            if rec.get("type") == "LINE":
+                container["subobjects"].append(rec)
+                cursor = rec
+            else:
+                cursor["subobjects"].append(rec)
+
+    return [container]
+
+
+def _last_pile_row(pile):
+    """Return the currently-open row of a PILE, first reclaiming any bare
+    siblings that already leaked directly into the PILE's own subobjects
+    (the same desync can escape one list at a time, landing here before
+    it ever reaches the equation's top level)."""
+    rows = pile["subobjects"]
+    split = len(rows)
+    while split > 0 and rows[split - 1].get("type") != "LINE":
+        split -= 1
+    if split == 0:
+        return pile
+    row = rows[split - 1]
+    row["subobjects"].extend(rows[split:])
+    del rows[split:]
+    return row
+
+
+def _tmpl_shape_violation(tmpl):
+    cls = TMPL_CLASSES.get(tmpl.get("selector"))
+    if cls is None:
+        return None  # unmapped selector; nothing to check against
+
+    line_slots, char_min, char_max = CLASS_SLOT_SHAPE[cls]
+    subobjects = tmpl.get("subobjects", [])
+    line_count = sum(1 for r in subobjects if r.get("type") == "LINE")
+    char_count = sum(1 for r in subobjects if r.get("type") == "CHAR")
+    other = [r.get("type") for r in subobjects if r.get("type") not in ("LINE", "CHAR", "SIZE", "FONT")]
+
+    if other:
+        return f"{tmpl['selector']} ({cls}) has unexpected child type(s): {other}"
+    if line_count != line_slots:
+        return f"{tmpl['selector']} ({cls}) expected {line_slots} LINE slot(s), got {line_count}"
+    if not (char_min <= char_count <= char_max):
+        return f"{tmpl['selector']} ({cls}) expected {char_min}-{char_max} CHAR slot(s), got {char_count}"
+    return None
+
+
+def find_shape_violations(records) -> list[str]:
+    """Recursively check every PILE/MATRIX/TMPL in `records` against the
+    invariants MTEF3.html guarantees for it (PILE/MATRIX rows are always
+    LINE; a TMPL's children match its class's documented slot pattern),
+    plus the top-level singularity invariant. A spurious extra END can
+    leave content correctly *counted* by _repair_desynced_records but
+    still wrongly nested (e.g. escaped into a TMPL's own slot list rather
+    than a PILE row) -- this is the check that catches those cases, not
+    just the ones the repair step already fixed.
+
+    Returns a list of human-readable violation descriptions; empty means
+    no violations found (though see the class docstrings for the residual
+    false-negative risk: a shape-valid but semantically wrong tree).
+    """
+    violations = []
+
+    non_end = [r for r in records if r.get("type") != "END"]
+    start = 1 if non_end and non_end[0].get("type") == "SIZE" else 0
+    container_items = non_end[start:]
+    if len(container_items) != 1:
+        violations.append(
+            f"expected exactly one top-level LINE/PILE, found {len(container_items)}"
+        )
+    elif container_items[0].get("type") not in ("LINE", "PILE"):
+        violations.append(
+            f"top-level record is {container_items[0].get('type')}, expected LINE or PILE"
+        )
+
+    def walk(rec):
+        rtype = rec.get("type")
+        if rtype in ("PILE", "MATRIX"):
+            bad = [r.get("type") for r in rec.get("subobjects", []) if r.get("type") != "LINE"]
+            if bad:
+                violations.append(f"{rtype} has non-LINE child type(s): {bad}")
+        elif rtype == "TMPL":
+            violation = _tmpl_shape_violation(rec)
+            if violation:
+                violations.append(violation)
+
+        for sub in rec.get("subobjects", []):
+            walk(sub)
+        ruler = rec.get("ruler")
+        if ruler:
+            walk(ruler)
+
+    for rec in container_items:
+        walk(rec)
+
+    return violations
+
+
+def _parse_equation_stream(stream, raise_on_desync=True):
     mtef_version, platform, product, version, subversion = struct.unpack(
         "5B", stream.read(5)
     )
@@ -671,17 +874,32 @@ def _parse_equation_stream(stream):
             break
         records.append(record)
 
+    records = _repair_desynced_records(records)
+    shape_violations = find_shape_violations(records)
+
+    if raise_on_desync and shape_violations:
+        raise ValueError(
+            "Equation failed shape validation, likely desynced by a "
+            "spurious extra END record: " + "; ".join(shape_violations)
+        )
+
     return MTEF3Equation(
-        records, mtef_version, platform, product, version, subversion
+        records,
+        mtef_version,
+        platform,
+        product,
+        version,
+        subversion,
+        shape_violations,
     )
 
 
-def iter_parse_equations(p: Path, raise_on_error=True):
+def iter_parse_equations(p: Path, raise_on_error=True, raise_on_desync=True):
     for equation in _get_mtef_ole(p):
         offset = equation[0]
         with BytesIO(equation[offset:]) as stream:
             try:
-                yield _parse_equation_stream(stream)
+                yield _parse_equation_stream(stream, raise_on_desync=raise_on_desync)
             except Exception as e:
                 if raise_on_error:
                     raise
@@ -689,8 +907,8 @@ def iter_parse_equations(p: Path, raise_on_error=True):
                 yield None
 
 
-def parse_equations(p: Path, raise_on_error=True):
-    return list(iter_parse_equations(p, raise_on_error))
+def parse_equations(p: Path, raise_on_error=True, raise_on_desync=True):
+    return list(iter_parse_equations(p, raise_on_error, raise_on_desync))
 
 
 def _slurp_numbers(nodes):
