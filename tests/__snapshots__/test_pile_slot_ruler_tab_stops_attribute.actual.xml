@@ -1,0 +1,54 @@
+<?xml version="1.0" ?>
+<math>
+	
+  
+	<mtable>
+		
+    
+		<mtr>
+			
+      
+			<mtd>
+				
+        
+				<mrow>
+					
+          
+					<mtext>A</mtext>
+					
+        
+				</mrow>
+				
+      
+			</mtd>
+			
+    
+		</mtr>
+		
+    
+		<mtr data-tab-stops="decimal:100">
+			
+      
+			<mtd>
+				
+        
+				<mrow>
+					
+        
+        
+					<mtext>B</mtext>
+					
+      
+				</mrow>
+				
+      
+			</mtd>
+			
+    
+		</mtr>
+		
+  
+	</mtable>
+	
+
+</math>

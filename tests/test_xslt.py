@@ -197,3 +197,51 @@ def test_matrix_two_by_two():
         <slot>{char("0x0063", "mathmode")}</slot>
         <slot>{char("0x0064", "mathmode")}</slot>
       </matrix>""")))
+
+
+def pile_inline(pile_content):
+    """Wrap pile content in a minimal inline mtef document (a pile can sit
+    directly under mtef, not just nested inside a slot)."""
+    return xslt(f"""<mtef>
+      <equation_options>inline</equation_options>
+      <pile>{pile_content}</pile>
+    </mtef>""")
+
+
+@verify_snapshot()
+def test_pile_ruler_tab_stops_attribute():
+    """A RULER attached to a PILE (tab stops shared by every row) is
+    serialized as a data-tab-stops attribute on <mtable>, so a tab-delimited
+    row can later be reconstructed into columns from the MathML alone."""
+    return serialize(MATHML_XSLT(pile_inline(f"""
+      <halign>left</halign>
+      <ruler>
+        <tab_stop><tab_type_id>0</tab_type_id><tab_type>left</tab_type><offset>0</offset></tab_stop>
+        <tab_stop><tab_type_id>2</tab_type_id><tab_type>right</tab_type><offset>240</offset></tab_stop>
+      </ruler>
+      <slot>{char("0x0041", "textmode")}</slot>
+      <slot>{char("0x0042", "textmode")}</slot>""")))
+
+
+@verify_snapshot()
+def test_pile_slot_ruler_tab_stops_attribute():
+    """A RULER attached to an individual LINE (per-row tab stops) is
+    serialized as a data-tab-stops attribute on that row's <mtr>, not on the
+    enclosing <mtable>."""
+    return serialize(MATHML_XSLT(pile_inline(f"""
+      <slot>{char("0x0041", "textmode")}</slot>
+      <slot>
+        <ruler>
+          <tab_stop><tab_type_id>4</tab_type_id><tab_type>decimal</tab_type><offset>100</offset></tab_stop>
+        </ruler>
+        {char("0x0042", "textmode")}
+      </slot>""")))
+
+
+@verify_snapshot()
+def test_pile_without_ruler_has_no_tab_stops_attribute():
+    """Sanity check: a pile with no RULER at all (the common case, e.g. a
+    stacked-equation pile) must not gain a data-tab-stops attribute."""
+    return serialize(MATHML_XSLT(pile_inline(f"""
+      <slot>{char("0x0041", "textmode")}</slot>
+      <slot>{char("0x0042", "textmode")}</slot>""")))
