@@ -35,21 +35,21 @@ matelem/last/r   = "<(ns)mtd columnalign='right'>$+$n#$-$n</(ns)mtd>";
     <xsl:template match="matrix[h_just='left']">
         <mtable columnalign="left">
             <xsl:variable name="cols" select="number(cols)"/>
-            <xsl:apply-templates select="(slot | pile)[position() mod $cols = 1]" mode="rows-left" />
+            <xsl:apply-templates select="(slot | pile)[(position() - 1) mod $cols = 0]" mode="rows-left" />
         </mtable>
     </xsl:template>
 
     <xsl:template match="matrix[h_just='center']">
         <mtable>
             <xsl:variable name="cols" select="number(cols)"/>
-            <xsl:apply-templates select="(slot | pile)[position() mod $cols = 1]" mode="rows-center" />
+            <xsl:apply-templates select="(slot | pile)[(position() - 1) mod $cols = 0]" mode="rows-center" />
         </mtable>
     </xsl:template>
 
     <xsl:template match="matrix[h_just='right']">
         <mtable columnalign="right">
             <xsl:variable name="cols" select="number(cols)"/>
-            <xsl:apply-templates select="(slot | pile)[position() mod $cols = 1]" mode="rows-right" />
+            <xsl:apply-templates select="(slot | pile)[(position() - 1) mod $cols = 0]" mode="rows-right" />
         </mtable>
     </xsl:template>
 

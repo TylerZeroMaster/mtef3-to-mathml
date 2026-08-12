@@ -177,3 +177,23 @@ def test_textmode_default_char_with_embellishment_not_nested():
         <embell>embDOT</embell>
         {char("0x03BC", "textmode")}
       </embell>""")))
+
+
+@verify_snapshot()
+def test_matrix_two_by_two():
+    """A 2-row/2-col MATRIX must lay out as two <mtr>s of two <mtd>s each
+    (a b / c d), not flattened into one row or split unevenly. Regression
+    guard for the row-start selector fix in matrix.xsl (previously
+    `position() mod $cols = 1`, now `(position() - 1) mod $cols = 0`) --
+    this is the cols>=2 case the fix is proven equivalent for; MATRIX1.bin
+    in test_integration.py only covers the cols=1 case that was broken."""
+    return serialize(MATHML_XSLT(inline(f"""
+      <matrix>
+        <h_just>left</h_just>
+        <rows>2</rows>
+        <cols>2</cols>
+        <slot>{char("0x0061", "mathmode")}</slot>
+        <slot>{char("0x0062", "mathmode")}</slot>
+        <slot>{char("0x0063", "mathmode")}</slot>
+        <slot>{char("0x0064", "mathmode")}</slot>
+      </matrix>""")))

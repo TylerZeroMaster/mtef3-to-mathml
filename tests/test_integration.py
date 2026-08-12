@@ -35,6 +35,16 @@ def test_table2():
 
 
 @verify_snapshot()
+def test_matrix1():
+    """Binomial coefficient ("n choose k"): a 2-row/1-col MATRIX record.
+    matrix.xsl's row-start selector was `position() mod $cols = 1`, which is
+    never true when cols=1 (x mod 1 is always 0), so a single-column matrix
+    produced zero <mtr>s and silently dropped all of its content -> an empty
+    <mtable/>. Fixed to `(position() - 1) mod $cols = 0`."""
+    return pipeline(FIXTURES / "MATRIX1.bin")
+
+
+@verify_snapshot()
 def test_sub():
     """Subscript"""
     return pipeline(FIXTURES / "SUB.bin")

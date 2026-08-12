@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<math>
+	
+  
+	<mrow>
+		
+      
+		<mtable columnalign="left">
+			<mtr columnalign="left">
+				<mtd columnalign="left">
+					<mi>a</mi>
+				</mtd>
+				<mtd columnalign="left">
+					<mi>b</mi>
+				</mtd>
+			</mtr>
+			<mtr columnalign="left">
+				<mtd columnalign="left">
+					<mi>c</mi>
+				</mtd>
+				<mtd columnalign="left">
+					<mi>d</mi>
+				</mtd>
+			</mtr>
+		</mtable>
+	</mrow>
+	
+
+</math>
