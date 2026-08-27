@@ -199,6 +199,29 @@ def test_matrix_two_by_two():
       </matrix>""")))
 
 
+@verify_snapshot()
+def test_matrix_missing_h_just():
+    """A MATRIX record whose h_just byte doesn't map to a known
+    HALIGN_TYPES value (or is otherwise absent) has no <h_just> element at
+    all -- _build_xml skips any field whose parsed value is None rather
+    than emitting e.g. <h_just/>. Previously none of the three h_just
+    templates (left/center/right) matched this shape at all, so the whole
+    matrix -- not just its column alignment -- fell through to the base
+    stylesheet's catch-all and silently dropped every row's content.
+    Reproduces the college-algebra-bundle bug (a 2-row/1-col matrix
+    encoding a parametric equation system, "{x(t)=5-t, y(t)=8-2t}", and
+    separately binomial coefficients like "n choose k") where h_just was
+    never set for a single-column matrix, which has no real
+    horizontal-alignment concept to begin with."""
+    return serialize(MATHML_XSLT(inline(f"""
+      <matrix>
+        <rows>2</rows>
+        <cols>1</cols>
+        <slot>{char("0x0061", "mathmode")}</slot>
+        <slot>{char("0x0062", "mathmode")}</slot>
+      </matrix>""")))
+
+
 def pile_inline(pile_content):
     """Wrap pile content in a minimal inline mtef document (a pile can sit
     directly under mtef, not just nested inside a slot)."""

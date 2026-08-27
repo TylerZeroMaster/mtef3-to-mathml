@@ -39,7 +39,27 @@ matelem/last/r   = "<(ns)mtd columnalign='right'>$+$n#$-$n</(ns)mtd>";
         </mtable>
     </xsl:template>
 
-    <xsl:template match="matrix[h_just='center']">
+    <!-- FIX: matches whenever h_just isn't explicitly 'left' or 'right',
+         not just the literal string 'center' — covers three real gaps:
+         (1) h_just missing entirely, which _build_xml (mtef3_to_mathml's
+         Python-to-XML step) produces whenever the parsed value is None,
+         skipping the field rather than emitting e.g. <h_just/>. Confirmed
+         via real production data: a 2-row/1-column matrix (a parametric
+         equation system, "{x(t)=5-t, y(t)=8-2t}") had no <h_just> element
+         at all — single-column matrices have no real horizontal-
+         alignment concept, so this is plausibly the common case for any
+         single-column matrix, not a rare edge case. (2) and (3) h_just
+         values 'relational' and 'decimal' (HALIGN_TYPES has five values;
+         only left/center/right had templates). All three previously fell
+         through to this file's absence of any matching template, and from
+         there to the base stylesheet's <xsl:template match="*" /> catch-
+         all — silently dropping the entire matrix (every row/column of
+         real content, not just formatting) rather than just rendering
+         without a columnalign override. 'center' behavior (no columnalign
+         attribute) is the correct fallback here, not a new default
+         invented for this fix: it's already exactly what the upstream
+         macro comment's un-suffixed "matrix" (no /l or /r) produces. -->
+    <xsl:template match="matrix[not(h_just='left') and not(h_just='right')]">
         <mtable>
             <xsl:variable name="cols" select="number(cols)"/>
             <xsl:apply-templates select="(slot | pile)[(position() - 1) mod $cols = 0]" mode="rows-center" />
