@@ -784,10 +784,16 @@ def _tmpl_shape_violation(tmpl):
     subobjects = tmpl.get("subobjects", [])
     line_count = sum(1 for r in subobjects if r.get("type") == "LINE")
     char_count = sum(1 for r in subobjects if r.get("type") == "CHAR")
-    other = [r.get("type") for r in subobjects if r.get("type") not in ("LINE", "CHAR", "SIZE", "FONT")]
+    other = [
+        r.get("type")
+        for r in subobjects
+        if r.get("type") not in ("LINE", "CHAR", "SIZE", "FONT")
+    ]
 
     if other:
-        return f"{tmpl['selector']} ({cls}) has unexpected child type(s): {other}"
+        return (
+            f"{tmpl['selector']} ({cls}) has unexpected child type(s): {other}"
+        )
     if line_count != line_slots:
         return f"{tmpl['selector']} ({cls}) expected {line_slots} LINE slot(s), got {line_count}"
     if not (char_min <= char_count <= char_max):
@@ -826,7 +832,11 @@ def find_shape_violations(records) -> list[str]:
     def walk(rec):
         rtype = rec.get("type")
         if rtype in ("PILE", "MATRIX"):
-            bad = [r.get("type") for r in rec.get("subobjects", []) if r.get("type") != "LINE"]
+            bad = [
+                r.get("type")
+                for r in rec.get("subobjects", [])
+                if r.get("type") != "LINE"
+            ]
             if bad:
                 violations.append(f"{rtype} has non-LINE child type(s): {bad}")
         elif rtype == "TMPL":
@@ -899,7 +909,9 @@ def iter_parse_equations(p: Path, raise_on_error=True, raise_on_desync=True):
         offset = equation[0]
         with BytesIO(equation[offset:]) as stream:
             try:
-                yield _parse_equation_stream(stream, raise_on_desync=raise_on_desync)
+                yield _parse_equation_stream(
+                    stream, raise_on_desync=raise_on_desync
+                )
             except Exception as e:
                 if raise_on_error:
                     raise
@@ -947,8 +959,7 @@ def transform_mathml(tree: etree._Element, block=False, raise_on_error=True):
         _slurp_numbers(list(root.iter()))
         return etree.fromstring(
             etree.tostring(root, encoding="unicode").replace(
-                '<math',
-                '<math xmlns="http://www.w3.org/1998/Math/MathML"'
+                "<math", '<math xmlns="http://www.w3.org/1998/Math/MathML"'
             )
         )
     except Exception as e:

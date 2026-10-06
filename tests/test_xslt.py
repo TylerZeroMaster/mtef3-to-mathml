@@ -39,33 +39,43 @@ def test_block_wrapper():
 @verify_snapshot()
 def test_fraction():
     """tmFRACT with two slots → <mfrac>."""
-    return serialize(MATHML_XSLT(inline("""
+    return serialize(
+        MATHML_XSLT(
+            inline("""
       <tmpl>
         <selector>tmFRACT</selector>
         <tmpl_options>0</tmpl_options>
         <slot><mi>a</mi></slot>
         <slot><mi>b</mi></slot>
-      </tmpl>""")))
+      </tmpl>""")
+        )
+    )
 
 
 @verify_snapshot()
 def test_subscript():
     """tmSCRIPT/tvSUB with base and subscript slots → <msub>."""
-    return serialize(MATHML_XSLT(inline("""
+    return serialize(
+        MATHML_XSLT(
+            inline("""
       <tmpl>
         <selector>tmSCRIPT</selector>
         <variation>tvSUB</variation>
         <tmpl_options>0</tmpl_options>
         <slot><mi>x</mi></slot>
         <slot><mn>2</mn></slot>
-      </tmpl>""")))
+      </tmpl>""")
+        )
+    )
 
 
 @verify_snapshot()
 def test_superscript():
     """tmSCRIPT/tvSUPER with base and superscript slots → <msup>.
     slot[3] is the exponent per the XSL template."""
-    return serialize(MATHML_XSLT(inline("""
+    return serialize(
+        MATHML_XSLT(
+            inline("""
       <tmpl>
         <selector>tmSCRIPT</selector>
         <variation>tvSUPER</variation>
@@ -73,13 +83,17 @@ def test_superscript():
         <slot><mi>x</mi></slot>
         <slot/>
         <slot><mn>2</mn></slot>
-      </tmpl>""")))
+      </tmpl>""")
+        )
+    )
 
 
 @verify_snapshot()
 def test_subsup():
     """tmSCRIPT/tvSUBSUP → <msubsup>."""
-    return serialize(MATHML_XSLT(inline("""
+    return serialize(
+        MATHML_XSLT(
+            inline("""
       <tmpl>
         <selector>tmSCRIPT</selector>
         <variation>tvSUBSUP</variation>
@@ -87,7 +101,9 @@ def test_subsup():
         <slot><mi>x</mi></slot>
         <slot><mn>1</mn></slot>
         <slot><mn>2</mn></slot>
-      </tmpl>""")))
+      </tmpl>""")
+        )
+    )
 
 
 @verify_snapshot()
@@ -96,27 +112,35 @@ def test_sqrt():
     emits for a plain square root) → <msqrt>, not a dropped/empty <mrow>.
     Reproduces the college-physics dropped-radical bug: tmROOT had no XSL
     template and fell through to the match="*" catch-all in transform.xsl."""
-    return serialize(MATHML_XSLT(inline("""
+    return serialize(
+        MATHML_XSLT(
+            inline("""
       <tmpl>
         <selector>tmROOT</selector>
         <variation>tvSQROOT</variation>
         <tmpl_options>0</tmpl_options>
         <slot><mi>x</mi></slot>
         <slot/>
-      </tmpl>""")))
+      </tmpl>""")
+        )
+    )
 
 
 @verify_snapshot()
 def test_nthroot():
     """tmROOT/tvNTHROOT with radicand (slot[1]) and index (slot[2]) → <mroot>."""
-    return serialize(MATHML_XSLT(inline("""
+    return serialize(
+        MATHML_XSLT(
+            inline("""
       <tmpl>
         <selector>tmROOT</selector>
         <variation>tvNTHROOT</variation>
         <tmpl_options>0</tmpl_options>
         <slot><mi>x</mi></slot>
         <slot><mn>3</mn></slot>
-      </tmpl>""")))
+      </tmpl>""")
+        )
+    )
 
 
 def char(mt_code, variation):
@@ -172,11 +196,15 @@ def test_textmode_default_char_with_embellishment_not_nested():
     'mtext inside mi' nesting concern raised when the textmode-default fix
     was added (char.xsl's default templates never wrap one token element
     inside another; only slot/pile/embell containers do)."""
-    return serialize(MATHML_XSLT(inline(f"""
+    return serialize(
+        MATHML_XSLT(
+            inline(f"""
       <embell>
         <embell>embDOT</embell>
         {char("0x03BC", "textmode")}
-      </embell>""")))
+      </embell>""")
+        )
+    )
 
 
 @verify_snapshot()
@@ -187,7 +215,9 @@ def test_matrix_two_by_two():
     `position() mod $cols = 1`, now `(position() - 1) mod $cols = 0`) --
     this is the cols>=2 case the fix is proven equivalent for; MATRIX1.bin
     in test_integration.py only covers the cols=1 case that was broken."""
-    return serialize(MATHML_XSLT(inline(f"""
+    return serialize(
+        MATHML_XSLT(
+            inline(f"""
       <matrix>
         <h_just>left</h_just>
         <rows>2</rows>
@@ -196,7 +226,9 @@ def test_matrix_two_by_two():
         <slot>{char("0x0062", "mathmode")}</slot>
         <slot>{char("0x0063", "mathmode")}</slot>
         <slot>{char("0x0064", "mathmode")}</slot>
-      </matrix>""")))
+      </matrix>""")
+        )
+    )
 
 
 @verify_snapshot()
@@ -213,13 +245,17 @@ def test_matrix_missing_h_just():
     separately binomial coefficients like "n choose k") where h_just was
     never set for a single-column matrix, which has no real
     horizontal-alignment concept to begin with."""
-    return serialize(MATHML_XSLT(inline(f"""
+    return serialize(
+        MATHML_XSLT(
+            inline(f"""
       <matrix>
         <rows>2</rows>
         <cols>1</cols>
         <slot>{char("0x0061", "mathmode")}</slot>
         <slot>{char("0x0062", "mathmode")}</slot>
-      </matrix>""")))
+      </matrix>""")
+        )
+    )
 
 
 def pile_inline(pile_content):
@@ -236,14 +272,18 @@ def test_pile_ruler_tab_stops_attribute():
     """A RULER attached to a PILE (tab stops shared by every row) is
     serialized as a data-tab-stops attribute on <mtable>, so a tab-delimited
     row can later be reconstructed into columns from the MathML alone."""
-    return serialize(MATHML_XSLT(pile_inline(f"""
+    return serialize(
+        MATHML_XSLT(
+            pile_inline(f"""
       <halign>left</halign>
       <ruler>
         <tab_stop><tab_type_id>0</tab_type_id><tab_type>left</tab_type><offset>0</offset></tab_stop>
         <tab_stop><tab_type_id>2</tab_type_id><tab_type>right</tab_type><offset>240</offset></tab_stop>
       </ruler>
       <slot>{char("0x0041", "textmode")}</slot>
-      <slot>{char("0x0042", "textmode")}</slot>""")))
+      <slot>{char("0x0042", "textmode")}</slot>""")
+        )
+    )
 
 
 @verify_snapshot()
@@ -251,20 +291,28 @@ def test_pile_slot_ruler_tab_stops_attribute():
     """A RULER attached to an individual LINE (per-row tab stops) is
     serialized as a data-tab-stops attribute on that row's <mtr>, not on the
     enclosing <mtable>."""
-    return serialize(MATHML_XSLT(pile_inline(f"""
+    return serialize(
+        MATHML_XSLT(
+            pile_inline(f"""
       <slot>{char("0x0041", "textmode")}</slot>
       <slot>
         <ruler>
           <tab_stop><tab_type_id>4</tab_type_id><tab_type>decimal</tab_type><offset>100</offset></tab_stop>
         </ruler>
         {char("0x0042", "textmode")}
-      </slot>""")))
+      </slot>""")
+        )
+    )
 
 
 @verify_snapshot()
 def test_pile_without_ruler_has_no_tab_stops_attribute():
     """Sanity check: a pile with no RULER at all (the common case, e.g. a
     stacked-equation pile) must not gain a data-tab-stops attribute."""
-    return serialize(MATHML_XSLT(pile_inline(f"""
+    return serialize(
+        MATHML_XSLT(
+            pile_inline(f"""
       <slot>{char("0x0041", "textmode")}</slot>
-      <slot>{char("0x0042", "textmode")}</slot>""")))
+      <slot>{char("0x0042", "textmode")}</slot>""")
+        )
+    )

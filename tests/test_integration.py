@@ -4,7 +4,11 @@ import pytest
 from lxml import etree
 from pytest_verify import verify_snapshot
 
-from mtef3_to_mathml import build_mtef_xml, iter_parse_equations, transform_mathml
+from mtef3_to_mathml import (
+    build_mtef_xml,
+    iter_parse_equations,
+    transform_mathml,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -117,4 +121,3 @@ def test_desync7():
     CHAR followed by a fraction TMPL that leaked out to the top level
     (CollegePhysics2e-ISM-Ch04, image100)."""
     return pipeline(FIXTURES / "DESYNC7.bin")
-
