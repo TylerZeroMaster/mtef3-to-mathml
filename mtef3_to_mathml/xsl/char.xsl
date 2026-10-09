@@ -609,6 +609,15 @@
         <mo><xsl:text disable-output-escaping="yes">&amp;#x2942;</xsl:text></mo>
     </xsl:template>
 
+    <!-- Textmode (typeface 24, MT Extra) EB01 is a narrow spacing glyph, not the
+         arrow its mathmode template produces: APCollegePhysics2e-ISM-Ch05
+         image149 (eta = F_s / 6 pi r v) has one between r and v and no arrow
+         anywhere. Left unmapped it landed as a raw private-use character
+         (tofu). -->
+    <xsl:template match="char[mt_code_value='0xEB01' and variation='textmode']">
+        <mtext><xsl:text disable-output-escaping="yes">&amp;#x2009;</xsl:text></mtext>
+    </xsl:template>
+
     <!-- SHORT RIGHTWARDS ARROW ABOVE LEFTWARDS ARROW -->
     <xsl:template match="char[mt_code_value='0xEB02' and variation='mathmode']">
         <mo><xsl:text disable-output-escaping="yes">&amp;#x2944;</xsl:text></mo>

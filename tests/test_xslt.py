@@ -1,7 +1,7 @@
 from lxml import etree
 from pytest_verify import verify_snapshot
 
-from mtef3_to_mathml import MATHML_XSLT
+from mtef3_to_mathml import MATHML_XSLT, transform_mathml
 
 
 def xslt(xml_str):
@@ -172,10 +172,26 @@ def test_textmode_default_ascii_gap_wrapped():
 
 @verify_snapshot()
 def test_textmode_default_mathtype_pua_gap_wrapped():
-    """A textmode char in the MathType private-use gap (U+EB01, uncovered
-    by both char_replacer.py and char.xsl's specific templates) must still
-    land wrapped in <mtext>, not as bare text."""
-    return serialize(MATHML_XSLT(inline(char("0xEB01", "textmode"))))
+    """A textmode char in the MathType private-use gap (U+ED0A, uncovered
+    by both char_replacer.py and any char.xsl template) must still land
+    wrapped in <mtext>, not as bare text."""
+    return serialize(MATHML_XSLT(inline(char("0xED0A", "textmode"))))
+
+
+def test_textmode_eb01_is_thin_space_not_private_use_tofu():
+    """U+EB01 in textmode (typeface 24, MT Extra) is a narrow spacing glyph
+    between multiplied variables, not an arrow: APCollegePhysics2e-ISM-Ch05
+    image149 is eta = F_s / (6 pi r v) with a small gap on each side of r
+    and no arrow anywhere. It used to fall through to the textmode default
+    and land as a raw private-use character, which renders as tofu."""
+    # transform_mathml (not MATHML_XSLT alone): the pipeline re-parses the
+    # serialized result, which is where an escaped &#xEB01; becomes the raw
+    # private-use character
+    tree = xslt(f"<mtef><slot>{char('0xEB01', 'textmode')}</slot></mtef>")
+    text = "".join(transform_mathml(tree).itertext())
+
+    assert not [ch for ch in text if 0xE000 <= ord(ch) <= 0xF8FF]
+    assert text.strip("\n ") == "\u2009"
 
 
 @verify_snapshot()
