@@ -4,9 +4,11 @@ from pytest_verify import verify_snapshot
 from mtef3_to_mathml.char_replacer import replace
 
 
-def make_tree(mt_code_hex, variation="mathmode"):
+def make_tree(mt_code_hex, variation="mathmode", typeface=None):
+    typeface_xml = f"<typeface>{typeface}</typeface>" if typeface else ""
     return etree.fromstring(f"""<slot>
       <char>
+        {typeface_xml}
         <mt_code_value>{mt_code_hex}</mt_code_value>
         <variation>{variation}</variation>
       </char>
@@ -89,3 +91,30 @@ def test_multiple_chars():
       <char><mt_code_value>0x0079</mt_code_value><variation>mathmode</variation></char>
     </slot>""")
     return serialize(replace(tree))
+
+
+def test_vector_typeface_letter_is_bold():
+    """Typeface 7 (VECTOR) letters are bold upright, not a plain <mi>."""
+    for code, letter in (("0x0046", "F"), ("0x0072", "r")):
+        out = serialize(replace(make_tree(code, typeface="7")))
+        assert f'<mi mathvariant="bold">{letter}</mi>' in out
+
+
+def test_variable_typeface_letter_stays_plain():
+    """Typeface 3 (VARIABLE) letters keep the generic <mi>."""
+    out = serialize(replace(make_tree("0x0046", typeface="3")))
+    assert "<mi>F</mi>" in out
+    assert "mathvariant" not in out
+
+
+def test_vector_typeface_textmode_letter_is_unchanged():
+    """No element to carry a mathvariant in textmode, so it is left as before."""
+    out = serialize(replace(make_tree("0x0046", "textmode", typeface="7")))
+    assert "mathvariant" not in out
+
+
+def test_vector_typeface_non_letter_is_unchanged():
+    """Only ASCII letters change; other typeface-7 characters keep their handling."""
+    out = serialize(replace(make_tree("0x0030", typeface="7")))
+    assert "<mn>0</mn>" in out
+    assert "mathvariant" not in out

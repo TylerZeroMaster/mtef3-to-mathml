@@ -326,3 +326,195 @@ def test_group_containing_a_script_is_taken_whole(spec, expected):
     search must look at every sibling before the script, not only those
     after the previous script's position."""
     assert _moved(spec) == expected
+
+
+# ---------------------------------------------------------------------------
+# tmLSCRIPT with nothing after it: authors use MathType's pre-script template
+# with an empty nucleus to draw a postscript (v followed by a pre-subscript
+# "0" reads as v_0). With no following char/tmpl there is nothing to become
+# the base, so it must be treated as a postscript on the *preceding* sibling.
+# ---------------------------------------------------------------------------
+
+# (tmLSCRIPT variation, slot-XML builder, expected tmSCRIPT variation)
+LSCRIPT_AS_POSTSCRIPT = [
+    ("tvLSUB", lambda: f"<slot>{char('0x0032')}</slot><slot/>", "tvSUB"),
+    ("tvLSUPER", lambda: f"<slot/><slot>{char('0x0032')}</slot>", "tvSUPER"),
+    (
+        "tvLSUBSUP",
+        lambda: f"<slot>{char('0x0032')}</slot><slot>{char('0x0033')}</slot>",
+        "tvSUBSUP",
+    ),
+]
+
+
+def lscript(variation, slots):
+    return f"""<tmpl>
+      <selector>tmLSCRIPT</selector>
+      <variation>{variation}</variation>
+      <tmpl_options>0</tmpl_options>
+      {slots}
+    </tmpl>"""
+
+
+def spell(parent):
+    return "".join(
+        chr(int(c.findtext("mt_code_value"), 16))
+        for c in parent
+        if c.tag == "char"
+    )
+
+
+@pytest.mark.parametrize(
+    "variation, slots, expected_variation",
+    LSCRIPT_AS_POSTSCRIPT,
+    ids=[v for v, _, _ in LSCRIPT_AS_POSTSCRIPT],
+)
+def test_lscript_without_following_sibling_becomes_postscript(
+    variation, slots, expected_variation
+):
+    tree = xml(f"""<slot>
+      {char("0x0076")}
+      {lscript(variation, slots())}
+    </slot>""")
+    move(tree)
+
+    tmpl = tree.find("tmpl")
+    assert tmpl.findtext("selector") == "tmSCRIPT"
+    assert tmpl.findtext("variation") == expected_variation
+    slots = tmpl.findall("slot")
+    assert len(slots) == 3
+    assert spell(slots[0]) == "v"  # preceding char became the base
+    assert spell(tree) == ""  # and is no longer a stray sibling
+
+
+def test_lscript_without_following_sibling_keeps_script_content_in_place():
+    tree = xml(f"""<slot>
+      {char("0x0076")}
+      {lscript("tvLSUB", f"<slot>{char('0x0030')}</slot><slot/>")}
+    </slot>""")
+    move(tree)
+
+    slots = tree.find("tmpl").findall("slot")
+    assert spell(slots[1]) == "0"  # subscript slot
+    assert len(slots[2]) == 0  # superscript slot still empty
+
+
+def test_lscript_without_following_sibling_takes_preceding_tmpl_as_base():
+    tree = xml(f"""<slot>
+      <tmpl>
+        <selector>tmFRACT</selector>
+        <variation>tvFFRACT</variation>
+        <slot>{char("0x0032")}</slot>
+      </tmpl>
+      {lscript("tvLSUB", f"<slot>{char('0x0030')}</slot><slot/>")}
+    </slot>""")
+    move(tree)
+
+    script = tree.xpath("tmpl[selector='tmSCRIPT']")[0]
+    assert script.findall("slot")[0].find("tmpl/selector").text == "tmFRACT"
+    assert tree.xpath("tmpl[selector='tmFRACT']") == []  # moved, not copied
+
+
+def test_lscript_without_following_sibling_takes_preceding_paren_group():
+    chars = "".join(char(f"0x{ord(c):04X}") for c in "(a+b)")
+    tree = xml(f"""<slot>
+      {chars}
+      {lscript("tvLSUB", f"<slot>{char('0x0030')}</slot><slot/>")}
+    </slot>""")
+    move(tree)
+
+    tmpl = tree.find("tmpl")
+    assert tmpl.findtext("selector") == "tmSCRIPT"
+    assert spell(tmpl.findall("slot")[0]) == "(a+b)"
+
+
+def test_lscript_postscript_only_takes_nearest_preceding_char():
+    tree = xml(f"""<slot>
+      {char("0x0061")}
+      {char("0x0076")}
+      {lscript("tvLSUB", f"<slot>{char('0x0030')}</slot><slot/>")}
+    </slot>""")
+    move(tree)
+
+    tmpl = tree.find("tmpl")
+    assert spell(tmpl.findall("slot")[0]) == "v"
+    assert spell(tree) == "a"
+
+
+# Regressions: cases that must keep their existing tmLSCRIPT behaviour.
+
+
+def test_lscript_with_following_char_still_prescript_when_char_precedes():
+    # a, then a real pre-script on x: x is the base, a stays outside.
+    tree = xml(f"""<slot>
+      {char("0x0061")}
+      {lscript("tvLSUB", f"<slot>{char('0x0032')}</slot><slot/>")}
+      {char("0x0078")}
+    </slot>""")
+    move(tree)
+
+    tmpl = tree.find("tmpl")
+    assert tmpl.findtext("selector") == "tmLSCRIPT"
+    assert tmpl.findtext("variation") == "tvLSUB"
+    assert spell(tmpl.findall("slot")[0]) == "x"
+    assert spell(tree) == "a"
+
+
+def test_lscript_with_following_tmpl_still_prescript_when_char_precedes():
+    tree = xml(f"""<slot>
+      {char("0x0061")}
+      {lscript("tvLSUB", f"<slot>{char('0x0032')}</slot><slot/>")}
+      <tmpl>
+        <selector>tmFRACT</selector>
+        <variation>tvFFRACT</variation>
+        <slot>{char("0x0032")}</slot>
+      </tmpl>
+    </slot>""")
+    move(tree)
+
+    tmpl = tree.xpath("tmpl[selector='tmLSCRIPT']")[0]
+    assert tmpl.findall("slot")[0].find("tmpl/selector").text == "tmFRACT"
+    assert spell(tree) == "a"
+
+
+def test_lscript_with_no_siblings_at_all_still_unchanged():
+    tree = xml(lscript("tvLSUB", f"<slot>{char('0x0032')}</slot><slot/>"))
+    before = serialize(tree)
+    move(tree)
+    assert serialize(tree) == before
+
+
+def test_lscript_does_not_borrow_char_from_enclosing_slot():
+    # The lone pre-script is the first thing in its own slot: the 'x' in the
+    # *outer* slot is not a sibling and must not be pulled in as the base.
+    tree = xml(f"""<slot>
+      {char("0x0078")}
+      <tmpl>
+        <selector>tmFRACT</selector>
+        <variation>tvFFRACT</variation>
+        <slot>
+          {lscript("tvLSUB", f"<slot>{char('0x0030')}</slot><slot/>")}
+        </slot>
+      </tmpl>
+    </slot>""")
+    before = serialize(tree)
+    move(tree)
+    assert serialize(tree) == before
+
+
+def test_tmscript_postscript_unaffected():
+    tree = xml(f"""<slot>
+      {char("0x0076")}
+      <tmpl>
+        <selector>tmSCRIPT</selector>
+        <variation>tvSUB</variation>
+        <tmpl_options>0</tmpl_options>
+        <slot>{char("0x0030")}</slot>
+      </tmpl>
+    </slot>""")
+    move(tree)
+
+    tmpl = tree.find("tmpl")
+    assert tmpl.findtext("selector") == "tmSCRIPT"
+    assert tmpl.findtext("variation") == "tvSUB"
+    assert spell(tmpl.findall("slot")[0]) == "v"

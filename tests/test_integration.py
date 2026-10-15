@@ -121,3 +121,22 @@ def test_desync7():
     CHAR followed by a fraction TMPL that leaked out to the top level
     (CollegePhysics2e-ISM-Ch04, image100)."""
     return pipeline(FIXTURES / "DESYNC7.bin")
+
+
+def test_lscript_without_following_sibling_is_a_postscript():
+    """A pre-subscript template (tmLSCRIPT) with an empty nucleus placed
+    after `v` draws as v_0 in MathType. With nothing following it to become
+    the base, the converter used to treat the "0" as the base of an
+    mmultiscripts with an empty presub; it must come out as msub(v, 0)."""
+    (mathml,) = [
+        etree.fromstring(r.encode())
+        for r in pipeline(FIXTURES / "LSCRIPT_NO_FOLLOWING.bin")
+    ]
+
+    assert mathml.xpath("//*[local-name()='mmultiscripts']") == []
+    msubs = mathml.xpath(
+        "//*[local-name()='msub']"
+        "[*[1]//*[local-name()='mi'][.='v']]"
+        "[*[2]//*[local-name()='mn'][.='0']]"
+    )
+    assert len(msubs) == 1

@@ -16,6 +16,12 @@ SUBSUP_SELECTOR = "selector='tmSCRIPT' or selector='tmLSCRIPT'"
 
 PRE = "selector='tmLSCRIPT'"
 
+LSCRIPT_TO_SCRIPT_VARIATION = {
+    "tvLSUB": "tvSUB",
+    "tvLSUPER": "tvSUPER",
+    "tvLSUBSUP": "tvSUBSUP",
+}
+
 OPEN_PAREN = (
     "mt_code_value = '0x0028' or "
     "mt_code_value = '0x005B' or "
@@ -168,7 +174,34 @@ class Mover:
             embell.append(char)
             el.getparent().replace(el, embell)
 
+    def convert_orphan_lscripts(self):
+        """Turn a tmLSCRIPT with nothing after it into a tmSCRIPT.
+
+        Authors sometimes use MathType's pre-script template with an empty
+        nucleus to draw a postscript (``v`` then a pre-subscript "0" reads as
+        v_0). With no following char/tmpl there is nothing to become the
+        pre-script's base, so left alone the script's own first slot would be
+        read as the base. Its slots have the same layout as tmSCRIPT's, so
+        rewriting the selector/variation lets ``move_following_subsup`` take
+        the preceding sibling as the base instead. Only done when there *is*
+        a preceding sibling; a lone pre-script is left unchanged.
+        """
+        for el in self.tree.xpath(f"//tmpl[{PRE}]"):
+            if self.new_following_siblings(el):
+                continue
+            if not el.xpath(
+                "preceding-sibling::tmpl | preceding-sibling::char"
+            ):
+                continue
+            variation = el.find("variation")
+            postscript = LSCRIPT_TO_SCRIPT_VARIATION.get(variation.text)
+            if postscript is None:
+                continue
+            el.find("selector").text = "tmSCRIPT"
+            variation.text = postscript
+
     def move(self):
+        self.convert_orphan_lscripts()
         self.move_following_subsup()
         self.move_preceding_subsup()
         self.invert_char_embell()

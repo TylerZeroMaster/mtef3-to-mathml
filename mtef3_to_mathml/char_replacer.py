@@ -246,10 +246,31 @@ def replace_character(repl, char):
     parent.remove(char)
 
 
+# MathType's VECTOR typeface (7) is bold upright, e.g. the bold F of a force
+# vector. The generic ASCII-letter replacement above would turn those into a
+# plain <mi> (and the XSLT never sees them), losing the bold. Math mode only:
+# textmode characters are bare text with no element to carry a mathvariant,
+# and the other characters in that typeface keep their existing handling.
+VECTOR_TYPEFACE = "7"
+VECTOR_LETTER = {"mathmode": '<mi mathvariant="bold">(Char)</mi>'}
+
+
+def is_vector_letter(char, mt_code):
+    if (char.findtext("typeface") or "").strip() != VECTOR_TYPEFACE:
+        return False
+    if (char.findtext("variation") or "").strip() != "mathmode":
+        return False
+    code = int(mt_code, 16)
+    return 0x41 <= code <= 0x5A or 0x61 <= code <= 0x7A
+
+
 def replace(tree):
     for char in tree.iter("char"):
         mt_code = char.findtext("mt_code_value")
         if mt_code is None:
+            continue
+        if is_vector_letter(char, mt_code):
+            replace_character(VECTOR_LETTER, char)
             continue
         repl = replacements.get(int(mt_code, 16))
         if repl is not None:
